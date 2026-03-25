@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function HomeScreen() {
+export function GroceryListScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Meal Planner</Text>
-      <Text style={styles.body}>Replace this screen with your meal planning dashboard.</Text>
+      <Text style={styles.title}>Grocery List Screen</Text>
+      <Text style={styles.body}>Placeholder for ingredients, shopping items, and checklist state.</Text>
     </View>
   );
 }

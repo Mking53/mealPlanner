@@ -1,10 +1,10 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-export default function TabTwoScreen() {
+export function HomeScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Explore</Text>
-      <Text style={styles.body}>Use this tab for recipes, grocery lists, or saved plans.</Text>
+      <Text style={styles.title}>Home Screen</Text>
+      <Text style={styles.body}>Placeholder for the main dashboard and meal overview.</Text>
     </View>
   );
 }
