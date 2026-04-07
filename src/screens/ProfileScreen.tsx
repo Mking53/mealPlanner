@@ -1,30 +1,174 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-export function ProfileScreen() {
+import {
+  ProfileHeaderCard,
+  SavedMealCardRow,
+  SettingsActionRow,
+  type SavedMealCard,
+} from '@/src/components';
+
+type ProfileScreenProps = {
+  onAddFriends: () => void;
+  isLoading: boolean;
+  onAddToDay: (meal: SavedMealCard) => void;
+  onEditMeal: (meal: SavedMealCard) => void;
+  onLogout: () => void;
+  onShowAllMeals: () => void;
+  savedMeals: SavedMealCard[];
+  userImageUri?: string;
+  userName: string;
+};
+
+const PREVIEW_MEAL_COUNT = 3;
+
+export function ProfileScreen({
+  onAddFriends,
+  isLoading,
+  onAddToDay,
+  onEditMeal,
+  onLogout,
+  onShowAllMeals,
+  savedMeals,
+  userImageUri,
+  userName,
+}: ProfileScreenProps) {
+  const previewMeals = savedMeals.slice(0, PREVIEW_MEAL_COUNT);
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Profile Screen</Text>
-      <Text style={styles.body}>Placeholder for preferences, account details, and dietary settings.</Text>
-    </View>
+    <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <View style={styles.content}>
+          <ProfileHeaderCard
+            userName={userName}
+            imageUri={userImageUri}
+            subtitle="Reuse favorite meals, update their details, and drop them onto your planner."
+          />
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeaderCopy}>
+                <Text style={styles.sectionTitle}>My Meal Cards</Text>
+                <Text style={styles.sectionHint}>Tap a card to edit it, or use Add to Day to plan it.</Text>
+              </View>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={onShowAllMeals}
+                style={({ pressed }) => [styles.viewAllButton, pressed && styles.buttonPressed]}>
+                <Text style={styles.viewAllText}>View All</Text>
+              </Pressable>
+            </View>
+
+            {isLoading ? (
+              <View style={styles.loadingCard}>
+                <ActivityIndicator size="small" color="#2f7d32" />
+                <Text style={styles.loadingText}>Syncing your meal planner before reusing saved meals...</Text>
+              </View>
+            ) : (
+              <View style={styles.mealList}>
+                {previewMeals.map((meal) => (
+                  <SavedMealCardRow
+                    key={meal.id}
+                    meal={meal}
+                    onPress={onEditMeal}
+                    onAddToDay={onAddToDay}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeaderCopy}>
+              <Text style={styles.sectionTitle}>Settings</Text>
+              <Text style={styles.sectionHint}>More account actions can be added here later.</Text>
+            </View>
+
+            <View style={styles.settingsList}>
+              <SettingsActionRow iconName="group-add" label="Add Friends" onPress={onAddFriends} />
+              <SettingsActionRow iconName="logout" label="Log Out" onPress={onLogout} />
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safeArea: {
     flex: 1,
-    justifyContent: 'center',
-    padding: 24,
+    backgroundColor: '#f6f8f4',
+  },
+  scrollContent: {
+    paddingBottom: 32,
+    backgroundColor: '#f6f8f4',
+  },
+  content: {
+    paddingHorizontal: 18,
+    paddingTop: 18,
+    gap: 20,
+  },
+  section: {
+    gap: 14,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     gap: 12,
-    backgroundColor: '#fff',
   },
-  title: {
-    fontSize: 32,
+  sectionHeaderCopy: {
+    flex: 1,
+    gap: 6,
+    paddingHorizontal: 2,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#173222',
+  },
+  sectionHint: {
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#5b6c61',
+  },
+  viewAllButton: {
+    minHeight: 38,
+    borderRadius: 999,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  viewAllText: {
+    fontSize: 14,
     fontWeight: '700',
-    color: '#11181C',
+    color: '#2f7d32',
   },
-  body: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#687076',
+  buttonPressed: {
+    opacity: 0.84,
+  },
+  loadingCard: {
+    minHeight: 180,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    padding: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 12,
+  },
+  loadingText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: '#587067',
+    textAlign: 'center',
+  },
+  mealList: {
+    gap: 14,
+  },
+  settingsList: {
+    gap: 12,
   },
 });

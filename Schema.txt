@@ -1,0 +1,191 @@
+# Supabase/Postgres Schema for Meal Planner
+
+## Summary
+Use Supabase Auth for authentication and a relational Postgres schema centered on households/groups, reusable meal cards, planned meals, kitchen inventory, grocery state, friends, and invites. This should support the current app plus the collaboration-heavy direction you chose: users can belong to multiple groups, groups can share planning data, invites/friends can evolve cleanly, and reusable meal cards can be copied into planner dates.
+
+## Core Schema
+- `profiles`
+  - `id uuid primary key references auth.users(id) on delete cascade`
+  - `email text not null unique`
+  - `full_name text not null`
+  - `avatar_url text`
+  - `created_at timestamptz not null default now()`
+  - `updated_at timestamptz not null default now()`
+
+- `friend_invites`
+  - `id uuid primary key default gen_random_uuid()`
+  - `sender_user_id uuid not null references profiles(id) on delete cascade`
+  - `recipient_email text not null`
+  - `status text not null check (status in ('pending','accepted','expired','revoked')) default 'pending'`
+  - `message text`
+  - `sent_at timestamptz not null default now()`
+  - `accepted_at timestamptz`
+  - `expires_at timestamptz`
+  - unique key on `(sender_user_id, recipient_email, status)` should be partial for `status = 'pending'`
+
+- `friends`
+  - `id uuid primary key default gen_random_uuid()`
+  - `user_id uuid not null references profiles(id) on delete cascade`
+  - `friend_user_id uuid not null references profiles(id) on delete cascade`
+  - `created_at timestamptz not null default now()`
+  - unique `(user_id, friend_user_id)`
+  - check `user_id <> friend_user_id`
+  - store both directions as two rows when friendship is accepted
+
+- `planner_groups`
+  - `id uuid primary key default gen_random_uuid()`
+  - `name text not null`
+  - `created_by_user_id uuid not null references profiles(id) on delete restrict`
+  - `description text`
+  - `is_archived boolean not null default false`
+  - `created_at timestamptz not null default now()`
+  - `updated_at timestamptz not null default now()`
+
+- `planner_group_members`
+  - `id uuid primary key default gen_random_uuid()`
+  - `group_id uuid not null references planner_groups(id) on delete cascade`
+  - `user_id uuid not null references profiles(id) on delete cascade`
+  - `role text not null check (role in ('owner','admin','member')) default 'member'`
+  - `joined_at timestamptz not null default now()`
+  - unique `(group_id, user_id)`
+
+- `planner_group_invites`
+  - `id uuid primary key default gen_random_uuid()`
+  - `group_id uuid not null references planner_groups(id) on delete cascade`
+  - `invited_by_user_id uuid not null references profiles(id) on delete restrict`
+  - `recipient_email text not null`
+  - `status text not null check (status in ('pending','accepted','declined','expired','revoked')) default 'pending'`
+  - `sent_at timestamptz not null default now()`
+  - `accepted_at timestamptz`
+  - unique partial key for one pending invite per `(group_id, recipient_email)`
+
+- `meal_cards`
+  - `id uuid primary key default gen_random_uuid()`
+  - `owner_user_id uuid references profiles(id) on delete cascade`
+  - `group_id uuid references planner_groups(id) on delete cascade`
+  - `name text not null`
+  - `meal_type text not null check (meal_type in ('Breakfast','Lunch','Dinner'))`
+  - `recipe text not null default 'None'`
+  - `nutritional_breakdown text not null default 'None'`
+  - `image_url text`
+  - `last_used_at timestamptz`
+  - `is_archived boolean not null default false`
+  - `created_by_user_id uuid not null references profiles(id) on delete restrict`
+  - `created_at timestamptz not null default now()`
+  - `updated_at timestamptz not null default now()`
+  - check that exactly one of `owner_user_id` or `group_id` is non-null
+
+- `meal_card_ingredients`
+  - `id uuid primary key default gen_random_uuid()`
+  - `meal_card_id uuid not null references meal_cards(id) on delete cascade`
+  - `ingredient_name text not null`
+  - `count numeric(10,2) not null check (count > 0)`
+  - `position integer not null default 0`
+  - unique `(meal_card_id, position)`
+
+- `planned_meals`
+  - `id uuid primary key default gen_random_uuid()`
+  - `meal_card_id uuid references meal_cards(id) on delete set null`
+  - `owner_user_id uuid references profiles(id) on delete cascade`
+  - `group_id uuid references planner_groups(id) on delete cascade`
+  - `name text not null`
+  - `meal_type text not null check (meal_type in ('Breakfast','Lunch','Dinner'))`
+  - `planned_date date not null`
+  - `date_label text`
+  - `recipe text not null default 'None'`
+  - `nutritional_breakdown text not null default 'None'`
+  - `was_made boolean not null default false`
+  - `created_by_user_id uuid not null references profiles(id) on delete restrict`
+  - `created_at timestamptz not null default now()`
+  - `updated_at timestamptz not null default now()`
+  - check that exactly one of `owner_user_id` or `group_id` is non-null
+
+- `planned_meal_ingredients`
+  - `id uuid primary key default gen_random_uuid()`
+  - `planned_meal_id uuid not null references planned_meals(id) on delete cascade`
+  - `ingredient_name text not null`
+  - `count numeric(10,2) not null check (count > 0)`
+  - `position integer not null default 0`
+  - unique `(planned_meal_id, position)`
+
+- `kitchen_items`
+  - `id uuid primary key default gen_random_uuid()`
+  - `owner_user_id uuid references profiles(id) on delete cascade`
+  - `group_id uuid references planner_groups(id) on delete cascade`
+  - `name text not null`
+  - `category text not null check (category in ('Fridge','Frozen','Pantry'))`
+  - `free_count numeric(10,2) not null default 0 check (free_count >= 0)`
+  - `allocated_count numeric(10,2) not null default 0 check (allocated_count >= 0)`
+  - `is_bought boolean not null default true`
+  - `created_by_user_id uuid not null references profiles(id) on delete restrict`
+  - `created_at timestamptz not null default now()`
+  - `updated_at timestamptz not null default now()`
+  - check that exactly one of `owner_user_id` or `group_id` is non-null
+
+- `grocery_items`
+  - `id uuid primary key default gen_random_uuid()`
+  - `owner_user_id uuid references profiles(id) on delete cascade`
+  - `group_id uuid references planner_groups(id) on delete cascade`
+  - `name text not null`
+  - `category text not null check (category in ('Produce','General'))`
+  - `count numeric(10,2) not null default 1 check (count >= 0)`
+  - `is_bought boolean not null default false`
+  - `derived_from_planner boolean not null default true`
+  - `created_by_user_id uuid not null references profiles(id) on delete restrict`
+  - `created_at timestamptz not null default now()`
+  - `updated_at timestamptz not null default now()`
+  - check that exactly one of `owner_user_id` or `group_id` is non-null
+
+## Ownership / Access Model
+- Personal data lives on rows with `owner_user_id` set and `group_id` null.
+- Shared group data lives on rows with `group_id` set and `owner_user_id` null.
+- `created_by_user_id` tracks who created a shared or personal row.
+- All meal-card-to-planner reuse should copy the meal card contents into `planned_meals` plus `planned_meal_ingredients`, while optionally keeping `meal_card_id` for traceability.
+
+## Supabase Policies / Constraints
+- Enable RLS on every application table.
+- `profiles`: user can read/update only their own row.
+- `friends` and `friend_invites`: user can read rows where they are sender, recipient, or participant.
+- `planner_groups`: readable by group members only.
+- `planner_group_members`: readable by members of the same group.
+- Shared content tables (`meal_cards`, `planned_meals`, `kitchen_items`, `grocery_items`): readable/writable by members of the linked group, or by the owner for personal rows.
+- Owners/admins should manage `planner_group_members` and `planner_group_invites`.
+- Add indexes on:
+  - `profiles(email)`
+  - `friend_invites(sender_user_id, status)`
+  - `planner_group_members(group_id, user_id)`
+  - `planner_group_invites(group_id, recipient_email, status)`
+  - `meal_cards(owner_user_id, updated_at desc)`
+  - `meal_cards(group_id, updated_at desc)`
+  - `planned_meals(planned_date)`
+  - `planned_meals(owner_user_id, planned_date)`
+  - `planned_meals(group_id, planned_date)`
+  - `kitchen_items(owner_user_id, category)`
+  - `kitchen_items(group_id, category)`
+  - `grocery_items(owner_user_id, is_bought)`
+  - `grocery_items(group_id, is_bought)`
+
+## Mapping to Current App
+- Auth screen and profile user data map to `auth.users` + `profiles`.
+- Saved meal cards map to `meal_cards` + `meal_card_ingredients`.
+- Planner meals map to `planned_meals` + `planned_meal_ingredients`.
+- My Kitchen maps to `kitchen_items`.
+- Grocery List maps to `grocery_items`.
+- Add Friends email popup maps first to `friend_invites`.
+- Planner group picker maps to `planner_groups` + `planner_group_members`.
+- Future “shared meal list together” behavior should use group-owned rows instead of per-user rows.
+
+## Test / Validation
+- Create one user, one profile row, and verify login-linked profile ownership.
+- Create a personal meal card and copy it into a planned meal for a date.
+- Create a group, add members, and verify group-shared meal cards/planned meals are visible to members only.
+- Create and accept friend invites, then verify reciprocal friend rows.
+- Add kitchen and grocery items for both personal and shared scopes.
+- Verify RLS blocks non-members from reading group rows.
+- Verify unique pending invite constraints prevent duplicate active invites.
+
+## Assumptions
+- Supabase Auth is the source of truth for credentials; app tables should never store passwords.
+- Collaboration should be group-based, not ad hoc per-meal sharing.
+- Grocery and kitchen data may be either personal or shared, following the same owner-or-group pattern.
+- Meal ingredients should stay normalized in child tables rather than JSON so they can be queried and updated cleanly.
