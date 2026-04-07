@@ -1,4 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { COLORS } from '../constants/theme';
+import { CardWrapper } from './CardWrapper';
 
 import type { DayMeals, MealItem } from './mealModels';
 
@@ -9,7 +11,7 @@ type DayMealCardProps = {
 
 export function DayMealCard({ day, onSelectMeal }: DayMealCardProps) {
   return (
-    <View style={styles.dayCard}>
+    <CardWrapper>
       <View>
         <Text style={styles.dayTitle}>{day.dayLabel}</Text>
         <Text style={styles.dayDate}>{day.dateLabel}</Text>
@@ -23,27 +25,19 @@ export function DayMealCard({ day, onSelectMeal }: DayMealCardProps) {
             onPress={() => {
               onSelectMeal(meal);
             }}
-            style={({ pressed }) => [styles.mealChip, pressed && styles.mealChipPressed]}>
+            style={({ pressed }) => [
+              styles.mealChip,
+              pressed && styles.mealChipPressed,
+            ]}>
             <Text style={styles.mealChipText}>{meal.name}</Text>
           </Pressable>
         ))}
       </View>
-    </View>
+    </CardWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  dayCard: {
-    borderRadius: 24,
-    backgroundColor: '#ffffff',
-    padding: 20,
-    gap: 16,
-    shadowColor: '#1f2a1f',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 14,
-    elevation: 3,
-  },
   dayTitle: {
     fontSize: 20,
     fontWeight: '700',
@@ -63,7 +57,7 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: '#edf6ed',
+    backgroundColor: COLORS.backgroundLighter,
   },
   mealChipPressed: {
     opacity: 0.78,

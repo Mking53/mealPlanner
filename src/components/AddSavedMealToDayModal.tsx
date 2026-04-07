@@ -1,5 +1,5 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
+import { COLORS } from '../constants/theme';
 import type { ProfileDayOption } from './profileModels';
 
 type AddSavedMealToDayModalProps = {
@@ -105,26 +105,26 @@ export function AddSavedMealToDayModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(17, 24, 28, 0.42)',
+    backgroundColor: COLORS.backdropText,
     justifyContent: 'center',
     padding: 20,
   },
   card: {
     maxHeight: '80%',
     borderRadius: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     padding: 20,
     gap: 16,
   },
   title: {
     fontSize: 24,
     fontWeight: '800',
-    color: '#173222',
+    color: COLORS.textPrimary,
   },
   subtitle: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#5b6c61',
+    color: COLORS.textSecondary,
   },
   optionList: {
     gap: 10,
@@ -132,8 +132,8 @@ const styles = StyleSheet.create({
   optionRow: {
     borderRadius: 18,
     borderWidth: 1,
-    borderColor: '#dce8dd',
-    backgroundColor: '#f8fbf7',
+    borderColor: COLORS.borderLight,
+    backgroundColor: COLORS.backgroundLight,
     paddingHorizontal: 14,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -142,8 +142,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   optionRowSelected: {
-    borderColor: '#2f7d32',
-    backgroundColor: '#e7f4e5',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
   },
   optionRowPressed: {
     opacity: 0.88,
@@ -151,47 +151,47 @@ const styles = StyleSheet.create({
   optionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#173222',
+    color: COLORS.textPrimary,
   },
   optionTitleSelected: {
-    color: '#225f26',
+    color: COLORS.success,
   },
   optionMeta: {
     marginTop: 4,
     fontSize: 13,
-    color: '#5b6c61',
+    color: COLORS.textSecondary,
   },
   optionMetaSelected: {
-    color: '#39713d',
+    color: COLORS.success,
   },
   optionDate: {
     flex: 1,
     fontSize: 13,
     lineHeight: 18,
     textAlign: 'right',
-    color: '#5b6c61',
+    color: COLORS.textSecondary,
   },
   optionDateSelected: {
-    color: '#225f26',
+    color: COLORS.success,
     fontWeight: '600',
   },
   selectionCard: {
     borderRadius: 18,
-    backgroundColor: '#f4f8f3',
+    backgroundColor: COLORS.backgroundLighter,
     padding: 14,
     gap: 4,
   },
   selectionLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#5b6c61',
+    color: COLORS.textSecondary,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
   },
   selectionValue: {
     fontSize: 15,
     lineHeight: 22,
-    color: '#173222',
+    color: COLORS.textPrimary,
   },
   actionRow: {
     flexDirection: 'row',
@@ -202,20 +202,20 @@ const styles = StyleSheet.create({
     minHeight: 52,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#d1ddd1',
+    borderColor: COLORS.border,
     justifyContent: 'center',
     alignItems: 'center',
   },
   secondaryButtonText: {
     fontSize: 15,
     fontWeight: '700',
-    color: '#4d5f54',
+    color: COLORS.textSecondary,
   },
   primaryButton: {
     flex: 1,
     minHeight: 52,
     borderRadius: 16,
-    backgroundColor: '#2f7d32',
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -225,7 +225,7 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     fontSize: 15,
     fontWeight: '800',
-    color: '#ffffff',
+    color: COLORS.textInvert,
   },
   buttonPressed: {
     opacity: 0.86,

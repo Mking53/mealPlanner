@@ -267,18 +267,18 @@ function getThreeDayMealSeeds(dayIndex: number): MealSeed[] {
   return (
     [
       [
-        { name: 'Avocado Toast', type: 'Breakfast' },
-        { name: 'Salmon Rice Bowl', type: 'Dinner' },
+        { name: 'Avocado Toast', type: 'Breakfast' as MealType },
+        { name: 'Salmon Rice Bowl', type: 'Dinner' as MealType },
       ],
       [
-        { name: 'Greek Yogurt Parfait', type: 'Breakfast' },
-        { name: 'Chicken Pesto Pasta', type: 'Lunch' },
+        { name: 'Greek Yogurt Parfait', type: 'Breakfast' as MealType },
+        { name: 'Chicken Pesto Pasta', type: 'Lunch' as MealType },
       ],
       [
-        { name: 'Berry Oatmeal', type: 'Breakfast' },
-        { name: 'Turkey Wrap', type: 'Lunch' },
+        { name: 'Berry Oatmeal', type: 'Breakfast' as MealType },
+        { name: 'Turkey Wrap', type: 'Lunch' as MealType },
       ],
-    ][dayIndex] ?? [{ name: 'Chef Special', type: 'Dinner' }]
+    ][dayIndex] ?? [{ name: 'Chef Special', type: 'Dinner' as MealType }]
   );
 }
 

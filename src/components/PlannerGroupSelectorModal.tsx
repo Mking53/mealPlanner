@@ -1,6 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-
+import { COLORS } from '../constants/theme';
 import type { PlannerGroup } from './plannerGroupModels';
 
 type PlannerGroupSelectorModalProps = {
@@ -34,7 +34,7 @@ export function PlannerGroupSelectorModal({
               accessibilityRole="button"
               onPress={onClose}
               style={({ pressed }) => [styles.closeButton, pressed && styles.buttonPressed]}>
-              <MaterialIcons name="close" size={20} color="#173222" />
+              <MaterialIcons name="close" size={20} color={COLORS.textPrimary} />
             </Pressable>
           </View>
 
@@ -64,7 +64,7 @@ export function PlannerGroupSelectorModal({
                   </View>
 
                   <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                    {isSelected ? <MaterialIcons name="check" size={16} color="#ffffff" /> : null}
+                    {isSelected ? <MaterialIcons name="check" size={16} color={COLORS.textInvert} /> : null}
                   </View>
                 </Pressable>
               );
@@ -76,7 +76,7 @@ export function PlannerGroupSelectorModal({
               accessibilityRole="button"
               onPress={onAddGroup}
               style={({ pressed }) => [styles.addGroupButton, pressed && styles.buttonPressed]}>
-              <MaterialIcons name="group-add" size={20} color="#2f7d32" />
+              <MaterialIcons name="group-add" size={20} color={COLORS.primary} />
               <Text style={styles.addGroupButtonText}>Add Group</Text>
             </Pressable>
 
@@ -102,7 +102,7 @@ const styles = StyleSheet.create({
   sheet: {
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     paddingHorizontal: 20,
     paddingTop: 18,
     paddingBottom: 24,
@@ -122,18 +122,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '800',
-    color: '#173222',
+    color: COLORS.textPrimary,
   },
   subtitle: {
     fontSize: 14,
     lineHeight: 20,
-    color: '#5b6c61',
+    color: COLORS.textSecondary,
   },
   closeButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#eef2ef',
+    backgroundColor: COLORS.backgroundLighter,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -144,8 +144,8 @@ const styles = StyleSheet.create({
   groupRow: {
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#dbe6dc',
-    backgroundColor: '#f8fbf7',
+    borderColor: COLORS.borderLight,
+    backgroundColor: COLORS.backgroundLight,
     paddingHorizontal: 16,
     paddingVertical: 14,
     flexDirection: 'row',
@@ -154,8 +154,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   groupRowSelected: {
-    borderColor: '#2f7d32',
-    backgroundColor: '#e7f4e5',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primaryLight,
   },
   groupCopy: {
     flex: 1,
@@ -164,36 +164,36 @@ const styles = StyleSheet.create({
   groupName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#173222',
+    color: COLORS.textPrimary,
   },
   groupNameSelected: {
-    color: '#215c25',
+    color: COLORS.success,
   },
   groupMeta: {
     fontSize: 13,
     lineHeight: 18,
-    color: '#5b6c61',
+    color: COLORS.textSecondary,
   },
   groupMetaSelected: {
-    color: '#39713d',
+    color: COLORS.success,
   },
   checkbox: {
     width: 24,
     height: 24,
     borderRadius: 12,
     borderWidth: 1.5,
-    borderColor: '#c5d4c7',
-    backgroundColor: '#ffffff',
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxSelected: {
-    borderColor: '#2f7d32',
-    backgroundColor: '#2f7d32',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary,
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: '#ecf1ec',
+    borderTopColor: COLORS.borderLight,
     paddingTop: 16,
     gap: 12,
   },
@@ -201,8 +201,8 @@ const styles = StyleSheet.create({
     minHeight: 56,
     borderRadius: 18,
     borderWidth: 1.5,
-    borderColor: '#2f7d32',
-    backgroundColor: '#f7fbf7',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.backgroundLight,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -211,19 +211,19 @@ const styles = StyleSheet.create({
   addGroupButtonText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#2f7d32',
+    color: COLORS.primary,
   },
   doneButton: {
     minHeight: 54,
     borderRadius: 18,
-    backgroundColor: '#2f7d32',
+    backgroundColor: COLORS.primary,
     justifyContent: 'center',
     alignItems: 'center',
   },
   doneButtonText: {
     fontSize: 16,
     fontWeight: '800',
-    color: '#ffffff',
+    color: COLORS.textInvert,
   },
   buttonPressed: {
     opacity: 0.84,

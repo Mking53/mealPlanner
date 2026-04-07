@@ -1,0 +1,34 @@
+Components — one-line summaries
+
+- ActionableListItem — Reusable list row with leading icon, text, and action buttons; supports strikethrough for completed items.
+- AddFriendsModal — Modal to invite friends via email with pending-email management and send-invite action.
+- AddGroceryItemModal — Generic modal to add grocery items with name/count fields and chip-based category selection.
+- AddMealModal — Complex modal for creating/editing meals with ingredient autocomplete and list management.
+- AddPlannerGroupModal — Modal to create planner groups with group name and multi-select friend checkboxes.
+- AddSavedMealToDayModal — Modal to pick a calendar day to assign a saved meal.
+- Avatar — Circular image with initials fallback; supports small/medium/large sizes.
+- CardWrapper — Reusable card container with standardized shadow, radius, and padding; supports noPadding/noShadow variants.
+- Chip — Multi-variant chip (outlined/filled/removable) for tags, filters, and selections.
+- DayMealCard — Card showing a day's meals with header and pressable meal chips.
+- DayTile — Calendar day tile with selection state and optional indicator for days with meals.
+- EditItemCountModal — Modal to edit grocery/kitchen item quantity with numeric validation.
+- EmptyState — Centered icon, title, and description for empty-list views.
+- GroceryCategoryCard — Card grouping grocery/kitchen items by category with a list of item rows.
+- GroceryItemRow — Row for grocery/kitchen items with checkbox, count display/edit, and delete action.
+- MealDetailModal — Read-only modal showing meal details (recipe, ingredients, nutrition) with a "made" toggle.
+- ModalWrapper — Standard modal container with title/subtitle, primary/secondary actions, and backdrop.
+- PlannerGroupSelectorModal — Bottom-sheet style modal for multi-selecting planner groups and adding groups.
+- ProfileHeaderCard — Profile hero card with user name, subtitle, and avatar over primary background.
+- SavedMealCardRow — Row/card for saved meals showing image, details, ingredient count, and Add-to-Day action.
+- SelectableListModal — Generic multi-select modal with custom item rendering and optional checkboxes.
+- SelectableRow — Selectable row with optional leading/trailing icons and checkbox behavior.
+- SelectedMealCard — Compact meal card used in planner/calendar views with success styling.
+- SettingsActionRow — Settings menu row with icon-in-circle, label, and chevron.
+- ValidatedInput — Text input with label, validation-aware styling, and helper/error text.
+
+Data / model files:
+- mealModels — Types and utilities for meals, ingredients, calendar generation, and formatting.
+- profileModels — Types, mock saved-meal data, and profile-related utilities.
+- plannerGroupModels — Types and mock data for planner groups and friend selections.
+
+Reference: see src/components/PATTERNS.md for usage patterns and examples.

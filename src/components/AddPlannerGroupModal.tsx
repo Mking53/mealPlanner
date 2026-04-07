@@ -1,13 +1,7 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
-import {
-  Modal,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { COLORS, CARD_STYLES } from '../constants/theme';
+import { ModalWrapper } from './ModalWrapper';
 
 import type { PlannerFriendOption } from './plannerGroupModels';
 
@@ -35,127 +29,96 @@ export function AddPlannerGroupModal({
   visible,
 }: AddPlannerGroupModalProps) {
   return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable onPress={() => {}} style={styles.card}>
-          <Text style={styles.title}>Add Group</Text>
-          <Text style={styles.subtitle}>
-            Choose friends from your invited list. This is mock UI for now and is not connected yet.
-          </Text>
+    <ModalWrapper
+      visible={visible}
+      onClose={onClose}
+      title="Add Group"
+      subtitle="Choose friends from your invited list. This is mock UI for now and is not connected yet."
+      primaryAction={{
+        label: 'Create Group',
+        onPress: onCreateGroup,
+        disabled: isCreateDisabled,
+      }}
+      secondaryAction={{
+        label: 'Cancel',
+        onPress: onClose,
+      }}>
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Group Name</Text>
+        <TextInput
+          placeholder="Enter group name"
+          placeholderTextColor={COLORS.textDisabled}
+          style={styles.input}
+          value={draftGroupName}
+          onChangeText={onChangeGroupName}
+        />
+      </View>
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Group Name</Text>
-            <TextInput
-              placeholder="Enter group name"
-              placeholderTextColor="#8a9399"
-              style={styles.input}
-              value={draftGroupName}
-              onChangeText={onChangeGroupName}
-            />
-          </View>
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Friends</Text>
+        <ScrollView
+          contentContainerStyle={styles.friendList}
+          showsVerticalScrollIndicator={false}>
+          {friends.map((friend) => {
+            const isSelected = selectedFriendIds.includes(friend.id);
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Friends</Text>
-            <ScrollView contentContainerStyle={styles.friendList} showsVerticalScrollIndicator={false}>
-              {friends.map((friend) => {
-                const isSelected = selectedFriendIds.includes(friend.id);
-
-                return (
-                  <Pressable
-                    key={friend.id}
-                    accessibilityRole="button"
-                    onPress={() => {
-                      onToggleFriend(friend.id);
-                    }}
-                    style={({ pressed }) => [
-                      styles.friendRow,
-                      isSelected && styles.friendRowSelected,
-                      pressed && styles.buttonPressed,
+            return (
+              <Pressable
+                key={friend.id}
+                accessibilityRole="button"
+                onPress={() => {
+                  onToggleFriend(friend.id);
+                }}
+                style={({ pressed }) => [
+                  styles.friendRow,
+                  isSelected && styles.friendRowSelected,
+                  pressed && styles.buttonPressed,
+                ]}>
+                <View style={styles.friendCopy}>
+                  <Text
+                    style={[
+                      styles.friendName,
+                      isSelected && styles.friendNameSelected,
                     ]}>
-                    <View style={styles.friendCopy}>
-                      <Text style={[styles.friendName, isSelected && styles.friendNameSelected]}>
-                        {friend.name}
-                      </Text>
-                    </View>
+                    {friend.name}
+                  </Text>
+                </View>
 
-                    <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                      {isSelected ? <MaterialIcons name="check" size={16} color="#ffffff" /> : null}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-          </View>
-
-          <View style={styles.actions}>
-            <Pressable
-              accessibilityRole="button"
-              onPress={onClose}
-              style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}>
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </Pressable>
-
-            <Pressable
-              accessibilityRole="button"
-              disabled={isCreateDisabled}
-              onPress={onCreateGroup}
-              style={({ pressed }) => [
-                styles.primaryButton,
-                isCreateDisabled && styles.primaryButtonDisabled,
-                pressed && !isCreateDisabled && styles.buttonPressed,
-              ]}>
-              <Text style={styles.primaryButtonText}>Create Group</Text>
-            </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+                <View
+                  style={[
+                    styles.checkbox,
+                    isSelected && styles.checkboxSelected,
+                  ]}>
+                  {isSelected ? (
+                    <MaterialIcons name="check" size={16} color={COLORS.textInvert} />
+                  ) : null}
+                </View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      </View>
+    </ModalWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 440,
-    maxHeight: '86%',
-    borderRadius: 26,
-    backgroundColor: '#ffffff',
-    padding: 20,
-    gap: 18,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#173222',
-  },
-  subtitle: {
-    fontSize: 14,
-    lineHeight: 20,
-    color: '#5b6c61',
-  },
   fieldGroup: {
     gap: 10,
   },
   label: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#54635b',
+    color: COLORS.textTertiary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#d7dfda',
-    borderRadius: 14,
+    borderColor: COLORS.border,
+    borderRadius: CARD_STYLES.borderRadiusSmall,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#13222a',
+    color: COLORS.textPrimary,
   },
   friendList: {
     gap: 10,
@@ -163,7 +126,7 @@ const styles = StyleSheet.create({
   friendRow: {
     borderWidth: 1,
     borderColor: '#dbe6dc',
-    borderRadius: 18,
+    borderRadius: CARD_STYLES.borderRadiusMedium,
     backgroundColor: '#f8fbf7',
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -173,7 +136,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   friendRowSelected: {
-    borderColor: '#2f7d32',
+    borderColor: COLORS.primary,
     backgroundColor: '#e7f4e5',
   },
   friendCopy: {
@@ -182,7 +145,7 @@ const styles = StyleSheet.create({
   friendName: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#173222',
+    color: COLORS.textPrimary,
   },
   friendNameSelected: {
     color: '#215c25',
@@ -193,46 +156,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: '#c5d4c7',
-    backgroundColor: '#ffffff',
+    backgroundColor: COLORS.background,
     justifyContent: 'center',
     alignItems: 'center',
   },
   checkboxSelected: {
-    borderColor: '#2f7d32',
-    backgroundColor: '#2f7d32',
-  },
-  actions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  secondaryButton: {
-    flex: 1,
-    minHeight: 52,
-    borderRadius: 16,
-    backgroundColor: '#eef2ef',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  secondaryButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#405249',
-  },
-  primaryButton: {
-    flex: 1,
-    minHeight: 52,
-    borderRadius: 16,
-    backgroundColor: '#2f7d32',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  primaryButtonDisabled: {
-    backgroundColor: '#8eb591',
-  },
-  primaryButtonText: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: '#ffffff',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.primary,
   },
   buttonPressed: {
     opacity: 0.84,

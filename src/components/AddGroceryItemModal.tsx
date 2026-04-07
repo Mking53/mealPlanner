@@ -1,5 +1,8 @@
-import { Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { COLORS, CARD_STYLES } from '../constants/theme';
 
+import { ModalWrapper } from './ModalWrapper';
+import { ValidatedInput } from './ValidatedInput';
 import type { ItemCategory } from './mealModels';
 
 type AddGroceryItemModalProps<TCategory extends ItemCategory> = {
@@ -32,121 +35,77 @@ export function AddGroceryItemModal<TCategory extends ItemCategory>({
   const isSaveDisabled = draftName.trim().length === 0 || draftCount.trim().length === 0 || !isCountValid;
 
   return (
-    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable onPress={() => {}} style={styles.card}>
-          <Text style={styles.title}>Add Item</Text>
+    <ModalWrapper
+      visible={visible}
+      onClose={onClose}
+      title="Add Item"
+      primaryAction={{
+        label: 'Save',
+        onPress: onSave,
+        disabled: isSaveDisabled,
+      }}
+      secondaryAction={{
+        label: 'Cancel',
+        onPress: onClose,
+      }}>
+      <ValidatedInput
+        label="Item Name"
+        placeholder="Enter grocery item"
+        value={draftName}
+        onChangeText={onChangeName}
+      />
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Item Name</Text>
-            <TextInput
-              placeholder="Enter grocery item"
-              placeholderTextColor="#8a9399"
-              style={styles.input}
-              value={draftName}
-              onChangeText={onChangeName}
-            />
-          </View>
+      <ValidatedInput
+        label="Count"
+        placeholder="Enter count"
+        value={draftCount}
+        onChangeText={onChangeCount}
+        isValid={isCountValid}
+        helperText={
+          draftCount.trim().length > 0 && !isCountValid
+            ? 'Please enter a valid count'
+            : undefined
+        }
+        keyboardType="number-pad"
+      />
 
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Count</Text>
-            <TextInput
-              placeholder="Enter count"
-              placeholderTextColor="#8a9399"
-              style={[styles.input, !isCountValid && draftCount.trim().length > 0 && styles.inputInvalid]}
-              value={draftCount}
-              onChangeText={onChangeCount}
-              keyboardType="number-pad"
-            />
-          </View>
-
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Category</Text>
-            <View style={styles.categoryRow}>
-              {categories.map((category) => (
-                <Pressable
-                  key={category}
-                  onPress={() => {
-                    onChangeCategory(category);
-                  }}
-                  style={({ pressed }) => [
-                    styles.categoryChip,
-                    draftCategory === category && styles.categoryChipSelected,
-                    pressed && styles.categoryChipPressed,
-                  ]}>
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      draftCategory === category && styles.categoryChipTextSelected,
-                    ]}>
-                    {category}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.actions}>
-            <Pressable onPress={onClose} style={({ pressed }) => [styles.secondaryButton, pressed && styles.buttonPressed]}>
-              <Text style={styles.secondaryButtonText}>Cancel</Text>
-            </Pressable>
+      <View style={styles.fieldGroup}>
+        <Text style={styles.label}>Category</Text>
+        <View style={styles.categoryRow}>
+          {categories.map((category) => (
             <Pressable
-              onPress={onSave}
+              key={category}
+              onPress={() => {
+                onChangeCategory(category);
+              }}
               style={({ pressed }) => [
-                styles.primaryButton,
-                isSaveDisabled && styles.primaryButtonDisabled,
-                pressed && !isSaveDisabled && styles.buttonPressed,
-              ]}
-              disabled={isSaveDisabled}>
-              <Text style={styles.primaryButtonText}>Save</Text>
+                styles.categoryChip,
+                draftCategory === category && styles.categoryChipSelected,
+                pressed && styles.categoryChipPressed,
+              ]}>
+              <Text
+                style={[
+                  styles.categoryChipText,
+                  draftCategory === category && styles.categoryChipTextSelected,
+                ]}>
+                {category}
+              </Text>
             </Pressable>
-          </View>
-        </Pressable>
-      </Pressable>
-    </Modal>
+          ))}
+        </View>
+      </View>
+    </ModalWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.45)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  card: {
-    width: '100%',
-    maxWidth: 420,
-    borderRadius: 26,
-    backgroundColor: '#ffffff',
-    padding: 20,
-    gap: 18,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: '800',
-    color: '#173222',
-  },
   fieldGroup: {
     gap: 10,
   },
   label: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#54635b',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#d7dfda',
-    borderRadius: 14,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#13222a',
-  },
-  inputInvalid: {
-    borderColor: '#d14d41',
+    color: COLORS.textTertiary,
   },
   categoryRow: {
     flexDirection: 'row',
@@ -157,10 +116,10 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    backgroundColor: '#eef2ef',
+    backgroundColor: COLORS.backgroundLight,
   },
   categoryChipSelected: {
-    backgroundColor: '#2f7d32',
+    backgroundColor: COLORS.primary,
   },
   categoryChipPressed: {
     opacity: 0.84,
@@ -171,39 +130,6 @@ const styles = StyleSheet.create({
     color: '#405249',
   },
   categoryChipTextSelected: {
-    color: '#ffffff',
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-  },
-  secondaryButton: {
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    backgroundColor: '#eef2ef',
-  },
-  secondaryButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#405249',
-  },
-  primaryButton: {
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
-    backgroundColor: '#2f7d32',
-  },
-  primaryButtonDisabled: {
-    backgroundColor: '#86b189',
-  },
-  primaryButtonText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#ffffff',
-  },
-  buttonPressed: {
-    opacity: 0.86,
+    color: COLORS.textInvert,
   },
 });

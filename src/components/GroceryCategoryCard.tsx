@@ -1,7 +1,10 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 
 import type { CategorizedItem, ItemCategory } from './mealModels';
 import { GroceryItemRow } from './GroceryItemRow';
+import { CardWrapper } from './CardWrapper';
+import { COLORS } from '../constants/theme';
+import { StyleSheet } from 'react-native';
 
 type GroceryCategoryCardProps = {
   category: ItemCategory;
@@ -19,7 +22,7 @@ export function GroceryCategoryCard({
   onUpdateCount,
 }: GroceryCategoryCardProps) {
   return (
-    <View style={styles.card}>
+    <CardWrapper>
       <Text style={styles.title}>{category}</Text>
 
       {items.length > 0 ? (
@@ -37,33 +40,21 @@ export function GroceryCategoryCard({
       ) : (
         <Text style={styles.emptyText}>No items in this category.</Text>
       )}
-    </View>
+    </CardWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    borderRadius: 22,
-    backgroundColor: '#ffffff',
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-    gap: 14,
-    shadowColor: '#18301e',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 8 },
-    shadowRadius: 16,
-    elevation: 3,
-  },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#173222',
+    color: COLORS.textPrimary,
   },
   list: {
     gap: 14,
   },
   emptyText: {
     fontSize: 14,
-    color: '#7a8480',
+    color: COLORS.textSecondary,
   },
 });
