@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -8,9 +8,12 @@ import {
   type MealIngredient,
   type MealType,
 } from './mealModels';
+import type { SavedMealCard } from './profileModels';
+import type { PlannerGroup } from './plannerGroupModels';
 
 type AddMealModalProps = {
   availableIngredientNames: string[];
+  availableGroups?: PlannerGroup[];
   draftDate: string;
   draftIngredientCount: string;
   draftIngredientName: string;
@@ -24,7 +27,10 @@ type AddMealModalProps = {
   isIngredientCountValid: boolean;
   isSaving: boolean;
   modalTitle?: string;
+  savedMealCards?: SavedMealCard[];
   saveButtonLabel?: string;
+  selectedGroupId?: string | null;
+  selectedMealCardId?: string | null;
   showDateField?: boolean;
   onAddIngredient: () => void;
   onChangeDate: (value: string) => void;
@@ -33,16 +39,19 @@ type AddMealModalProps = {
   onChangeName: (value: string) => void;
   onChangeNutritionalBreakdown: (value: string) => void;
   onChangeRecipe: (value: string) => void;
+  onChangeGroupId?: (groupId: string | null) => void;
   onChangeType: (value: MealType) => void;
   onClose: () => void;
   onEditIngredient: (index: number) => void;
   onRemoveIngredient: (index: number) => void;
   onSave: () => void;
+  onSelectMealCard?: (mealCard: SavedMealCard) => void;
   visible: boolean;
 };
 
 export function AddMealModal({
   availableIngredientNames,
+  availableGroups = [],
   draftDate,
   draftIngredientCount,
   draftIngredientName,
@@ -56,7 +65,10 @@ export function AddMealModal({
   isIngredientCountValid,
   isSaving,
   modalTitle = 'Add Meal',
+  savedMealCards = [],
   saveButtonLabel = 'Save',
+  selectedGroupId = null,
+  selectedMealCardId = null,
   showDateField = true,
   onAddIngredient,
   onChangeDate,
@@ -65,13 +77,18 @@ export function AddMealModal({
   onChangeName,
   onChangeNutritionalBreakdown,
   onChangeRecipe,
+  onChangeGroupId,
   onChangeType,
   onClose,
   onEditIngredient,
   onRemoveIngredient,
   onSave,
+  onSelectMealCard,
   visible,
 }: AddMealModalProps) {
+  const [isMealCardMenuOpen, setIsMealCardMenuOpen] = useState(false);
+  const [isGroupMenuOpen, setIsGroupMenuOpen] = useState(false);
+  const [mealCardSearch, setMealCardSearch] = useState('');
   const isDateRequired = showDateField;
   const isSaveDisabled =
     draftName.trim().length === 0 ||
@@ -91,6 +108,30 @@ export function AddMealModal({
   );
   const shouldShowIngredientDropdown =
     draftIngredientName.trim().length > 0 && filteredIngredientNames.length > 0;
+  const selectedMealCard =
+    savedMealCards.find((mealCard) => mealCard.id === selectedMealCardId) ?? null;
+  const selectedGroup = availableGroups.find((group) => group.id === selectedGroupId) ?? null;
+  const normalizedMealCardSearch = mealCardSearch.trim().toLowerCase();
+  const filteredMealCards = useMemo(
+    () =>
+      savedMealCards.filter((mealCard) => {
+        if (!normalizedMealCardSearch) {
+          return true;
+        }
+
+        const searchableText = [
+          mealCard.name,
+          mealCard.type,
+          mealCard.recipe,
+          mealCard.ingredients.map((ingredient) => ingredient.name).join(' '),
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return searchableText.includes(normalizedMealCardSearch);
+      }),
+    [normalizedMealCardSearch, savedMealCards]
+  );
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
@@ -101,6 +142,94 @@ export function AddMealModal({
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled">
             <Text style={styles.title}>{modalTitle}</Text>
+
+            {savedMealCards.length > 0 ? (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Use My Meal Card</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setIsMealCardMenuOpen((current) => !current);
+                  }}
+                  style={({ pressed }) => [
+                    styles.mealCardDropdownTrigger,
+                    isMealCardMenuOpen && styles.mealCardDropdownTriggerOpen,
+                    pressed && styles.typeChipPressed,
+                  ]}>
+                  <View style={styles.mealCardDropdownCopy}>
+                    <Text style={styles.mealCardDropdownLabel}>
+                      {selectedMealCard?.name ?? 'Select a meal card'}
+                    </Text>
+                    <Text style={styles.mealCardDropdownHint}>
+                      {selectedMealCard ? `${selectedMealCard.type} selected` : 'Browse and auto-fill from saved meals'}
+                    </Text>
+                  </View>
+                  <Text style={styles.mealCardDropdownChevron}>
+                    {isMealCardMenuOpen ? '▲' : '▼'}
+                  </Text>
+                </Pressable>
+
+                {isMealCardMenuOpen ? (
+                  <View style={styles.mealCardDropdownMenu}>
+                    <TextInput
+                      placeholder="Search meal cards"
+                      placeholderTextColor="#8a9399"
+                      style={styles.input}
+                      value={mealCardSearch}
+                      onChangeText={setMealCardSearch}
+                    />
+                    <ScrollView
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator={false}
+                      style={styles.mealCardResultsScroll}
+                      contentContainerStyle={styles.mealCardResultsContent}>
+                      {filteredMealCards.length > 0 ? (
+                        filteredMealCards.map((mealCard) => (
+                          <Pressable
+                            key={mealCard.id}
+                            onPress={() => {
+                              onSelectMealCard?.(mealCard);
+                              setIsMealCardMenuOpen(false);
+                            }}
+                            style={({ pressed }) => [
+                              styles.mealCardResultRow,
+                              selectedMealCardId === mealCard.id && styles.mealCardResultRowSelected,
+                              pressed && styles.typeChipPressed,
+                            ]}>
+                            <View style={styles.mealCardResultCopy}>
+                              <Text
+                                style={[
+                                  styles.mealCardResultTitle,
+                                  selectedMealCardId === mealCard.id && styles.mealCardResultTitleSelected,
+                                ]}>
+                                {mealCard.name}
+                              </Text>
+                              <Text
+                                numberOfLines={1}
+                                style={[
+                                  styles.mealCardResultSubtitle,
+                                  selectedMealCardId === mealCard.id && styles.mealCardResultSubtitleSelected,
+                                ]}>
+                                {mealCard.type} · {mealCard.ingredients.length} ingredients
+                              </Text>
+                            </View>
+                          </Pressable>
+                        ))
+                      ) : (
+                        <View style={styles.emptyMealCardResults}>
+                          <Text style={styles.emptyMealCardResultsText}>
+                            No meal cards match your search.
+                          </Text>
+                        </View>
+                      )}
+                    </ScrollView>
+                  </View>
+                ) : null}
+                <Text style={styles.helperText}>
+                  Select a saved meal card to auto-fill everything except the date.
+                </Text>
+              </View>
+            ) : null}
 
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Meal Name</Text>
@@ -127,6 +256,110 @@ export function AddMealModal({
                   autoCorrect={false}
                 />
                 <Text style={styles.helperText}>Required. Use `mm/dd/year`.</Text>
+              </View>
+            ) : null}
+
+            {availableGroups.length > 0 ? (
+              <View style={styles.fieldGroup}>
+                <Text style={styles.label}>Group</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setIsGroupMenuOpen((current) => !current);
+                  }}
+                  style={({ pressed }) => [
+                    styles.mealCardDropdownTrigger,
+                    isGroupMenuOpen && styles.mealCardDropdownTriggerOpen,
+                    pressed && styles.typeChipPressed,
+                  ]}>
+                  <View style={styles.mealCardDropdownCopy}>
+                    <Text style={styles.mealCardDropdownLabel}>
+                      {selectedGroup?.name ?? 'Personal meal'}
+                    </Text>
+                    <Text style={styles.mealCardDropdownHint}>
+                      {selectedGroup ? 'This meal will be added to the selected group.' : 'Leave unselected to keep this meal personal.'}
+                    </Text>
+                  </View>
+                  <Text style={styles.mealCardDropdownChevron}>
+                    {isGroupMenuOpen ? '▲' : '▼'}
+                  </Text>
+                </Pressable>
+
+                {isGroupMenuOpen ? (
+                  <View style={styles.mealCardDropdownMenu}>
+                    <Pressable
+                      accessibilityRole="button"
+                      onPress={() => {
+                        onChangeGroupId?.(null);
+                        setIsGroupMenuOpen(false);
+                      }}
+                      style={({ pressed }) => [
+                        styles.mealCardResultRow,
+                        selectedGroupId === null && styles.mealCardResultRowSelected,
+                        pressed && styles.typeChipPressed,
+                      ]}>
+                      <View style={styles.mealCardResultCopy}>
+                        <Text
+                          style={[
+                            styles.mealCardResultTitle,
+                            selectedGroupId === null && styles.mealCardResultTitleSelected,
+                          ]}>
+                          Personal meal
+                        </Text>
+                        <Text
+                          style={[
+                            styles.mealCardResultSubtitle,
+                            selectedGroupId === null && styles.mealCardResultSubtitleSelected,
+                          ]}>
+                          Only visible in your own planner
+                        </Text>
+                      </View>
+                    </Pressable>
+
+                    <ScrollView
+                      nestedScrollEnabled
+                      showsVerticalScrollIndicator={false}
+                      style={styles.mealCardResultsScroll}
+                      contentContainerStyle={styles.mealCardResultsContent}>
+                      {availableGroups.map((group) => (
+                        <Pressable
+                          key={group.id}
+                          accessibilityRole="button"
+                          onPress={() => {
+                            onChangeGroupId?.(group.id);
+                            setIsGroupMenuOpen(false);
+                          }}
+                          style={({ pressed }) => [
+                            styles.mealCardResultRow,
+                            selectedGroupId === group.id && styles.mealCardResultRowSelected,
+                            pressed && styles.typeChipPressed,
+                          ]}>
+                          <View style={styles.mealCardResultCopy}>
+                            <Text
+                              style={[
+                                styles.mealCardResultTitle,
+                                selectedGroupId === group.id && styles.mealCardResultTitleSelected,
+                              ]}>
+                              {group.name}
+                            </Text>
+                            <Text
+                              style={[
+                                styles.mealCardResultSubtitle,
+                                selectedGroupId === group.id && styles.mealCardResultSubtitleSelected,
+                              ]}>
+                              {group.memberNamesPreview && group.memberNamesPreview.length > 0
+                                ? group.memberNamesPreview.join(', ')
+                                : `${group.memberIds.length} member${group.memberIds.length === 1 ? '' : 's'}`}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      ))}
+                    </ScrollView>
+                  </View>
+                ) : null}
+                <Text style={styles.helperText}>
+                  Choose a group from the dropdown if this meal should be shared with that group.
+                </Text>
               </View>
             ) : null}
 
@@ -371,6 +604,93 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+  },
+  mealCardDropdownTrigger: {
+    borderWidth: 1,
+    borderColor: '#d7dfda',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  mealCardDropdownTriggerOpen: {
+    borderColor: '#2f7d32',
+  },
+  mealCardDropdownCopy: {
+    flex: 1,
+    gap: 4,
+  },
+  mealCardDropdownLabel: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#173222',
+  },
+  mealCardDropdownHint: {
+    fontSize: 13,
+    color: '#66756d',
+  },
+  mealCardDropdownChevron: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#587067',
+  },
+  mealCardDropdownMenu: {
+    borderWidth: 1,
+    borderColor: '#d7dfda',
+    borderRadius: 16,
+    backgroundColor: '#f8fbf7',
+    padding: 12,
+    gap: 10,
+  },
+  mealCardResultsScroll: {
+    maxHeight: 220,
+  },
+  mealCardResultsContent: {
+    gap: 8,
+  },
+  mealCardResultRow: {
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#dbe6dc',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  mealCardResultRowSelected: {
+    borderColor: '#2f7d32',
+    backgroundColor: '#e7f4e5',
+  },
+  mealCardResultCopy: {
+    gap: 4,
+  },
+  mealCardResultTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#173222',
+  },
+  mealCardResultTitleSelected: {
+    color: '#2f7d32',
+  },
+  mealCardResultSubtitle: {
+    fontSize: 13,
+    color: '#66756d',
+  },
+  mealCardResultSubtitleSelected: {
+    color: '#2f7d32',
+  },
+  emptyMealCardResults: {
+    borderRadius: 14,
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+  },
+  emptyMealCardResultsText: {
+    fontSize: 13,
+    color: '#66756d',
   },
   typeChip: {
     borderRadius: 999,

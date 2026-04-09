@@ -1,6 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
@@ -17,7 +17,6 @@ import {
   formatSelectedDayTitle,
   formatSelectedWeekTitle,
   getAvailableMealIngredientNames,
-  getDefaultSelectedDate,
   getDateKeyFromDateInput,
   getIngredientInputCount,
   getIngredientInputName,
@@ -26,10 +25,11 @@ import {
   getPlannerGroupButtonLabel,
   hasMealsForDate,
   isValidIngredientCount,
+  MealCardNamePromptModal,
   MealDetailModal,
-  MOCK_PLANNER_FRIENDS,
-  MOCK_PLANNER_GROUPS,
   PlannerGroupSelectorModal,
+  type PlannerFriendOption,
+  type SavedMealCard,
   type PlannerGroup,
   removeMealIngredient,
   type MealIngredient,
@@ -41,19 +41,44 @@ import {
   WEEKDAY_LABELS,
 } from '@/src/components';
 import { useMealPlanner } from '@/src/state';
+import { api, ApiError } from '@/src/api/mealPlannerApi';
+import {
+  createMealCardInputFromMeal,
+  createMealDraftFromSavedMealCard,
+  mapApiMealCardsToSavedMealCards,
+} from '@/src/utils/savedMealCards';
+import { getMealCardNameConflictMessage, isMealCardNameConflictError } from '@/src/utils/mealCardErrors';
+
+type MealCardCreateDraft = {
+  ingredients: string[];
+  mealType: MealType;
+  name: string;
+  nutritionalBreakdown?: string;
+  recipe?: string;
+  successMessage: string;
+};
 
 function createCalendarDate(referenceDate: Date, day: number) {
   return new Date(referenceDate.getFullYear(), referenceDate.getMonth(), day, 12, 0, 0, 0);
 }
 
+function createTodayCalendarDate() {
+  const now = new Date();
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), 12, 0, 0, 0);
+}
+
 type PlannerDisplayMode = 'day' | 'week';
 
 export function PlannerScreen() {
-  const [visibleMonth, setVisibleMonth] = useState(() => new Date(2026, 2, 1, 12, 0, 0, 0));
-  const [selectedDate, setSelectedDate] = useState(() => new Date(2026, 2, 23, 12, 0, 0, 0));
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const today = createTodayCalendarDate();
+    return new Date(today.getFullYear(), today.getMonth(), 1, 12, 0, 0, 0);
+  });
+  const [selectedDate, setSelectedDate] = useState(createTodayCalendarDate);
   const [selectedMealId, setSelectedMealId] = useState<string | null>(null);
   const [displayMode, setDisplayMode] = useState<PlannerDisplayMode>('day');
-  const [availableGroups, setAvailableGroups] = useState<PlannerGroup[]>(MOCK_PLANNER_GROUPS);
+  const [availableGroups, setAvailableGroups] = useState<PlannerGroup[]>([]);
+  const [availableFriends, setAvailableFriends] = useState<PlannerFriendOption[]>([]);
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
   const [isGroupMenuVisible, setIsGroupMenuVisible] = useState(false);
   const [isAddGroupVisible, setIsAddGroupVisible] = useState(false);
@@ -70,7 +95,23 @@ export function PlannerScreen() {
   const [draftIngredientCount, setDraftIngredientCount] = useState('1');
   const [editingIngredientIndex, setEditingIngredientIndex] = useState<number | null>(null);
   const [draftNutritionalBreakdown, setDraftNutritionalBreakdown] = useState('');
-  const { addMeal, isLoading, kitchenInventory, mealsByDate, setMealMade, updateMealInState } = useMealPlanner();
+  const [selectedAddMealGroupId, setSelectedAddMealGroupId] = useState<string | null>(null);
+  const [selectedMealCardId, setSelectedMealCardId] = useState<string | null>(null);
+  const [savedMealCards, setSavedMealCards] = useState<SavedMealCard[]>([]);
+  const [isSavingMealCard, setIsSavingMealCard] = useState(false);
+  const [pendingMealCardDraft, setPendingMealCardDraft] = useState<MealCardCreateDraft | null>(null);
+  const [mealCardNamePromptValue, setMealCardNamePromptValue] = useState('');
+  const [mealCardNamePromptError, setMealCardNamePromptError] = useState<string | null>(null);
+  const [isCreatingGroup, setIsCreatingGroup] = useState(false);
+  const {
+    addMeal,
+    ensureMealsForMonth,
+    isLoading,
+    kitchenInventory,
+    mealsByDate,
+    setMealMade,
+    updateMealInState,
+  } = useMealPlanner();
   const selectedMeal = selectedMealId ? updateMealInState(selectedMealId) : null;
 
   const calendarCells = useMemo(() => buildCalendarGrid(visibleMonth), [visibleMonth]);
@@ -92,18 +133,55 @@ export function PlannerScreen() {
   const isIngredientCountDraftValid = isValidIngredientCount(draftIngredientCount);
   const selectedGroupLabel = getPlannerGroupButtonLabel(availableGroups, selectedGroupIds);
   const isCreateGroupDisabled =
-    newGroupNameDraft.trim().length === 0 || selectedFriendIdsForNewGroup.length === 0;
+    isCreatingGroup ||
+    newGroupNameDraft.trim().length === 0 ||
+    selectedFriendIdsForNewGroup.length === 0;
 
   useEffect(() => {
-    if (Object.keys(mealsByDate).length === 0) {
-      return;
+    let isMounted = true;
+
+    async function loadPlannerData() {
+      try {
+        const [mealCardsResponse, groupsResponse, friendsResponse] = await Promise.all([
+          api.getMealCards(),
+          api.getPlannerGroups(),
+          api.getFriends(),
+        ]);
+        if (isMounted) {
+          setSavedMealCards(mapApiMealCardsToSavedMealCards(mealCardsResponse));
+          setAvailableGroups(Array.isArray(groupsResponse) ? groupsResponse : []);
+          setAvailableFriends(Array.isArray(friendsResponse) ? friendsResponse : []);
+        }
+      } catch (error) {
+        console.error('Failed to load planner data:', error);
+      }
     }
 
-    setSelectedDate(getDefaultSelectedDate(visibleMonth, mealsByDate));
-  }, [mealsByDate, visibleMonth]);
+    void loadPlannerData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    void ensureMealsForMonth(visibleMonth);
+  }, [ensureMealsForMonth, visibleMonth]);
 
   function handleMonthChange(delta: number) {
-    setVisibleMonth((currentMonth) => shiftMonth(currentMonth, delta));
+    setVisibleMonth((currentMonth) => {
+      const nextMonth = shiftMonth(currentMonth, delta);
+
+      setSelectedDate((currentSelectedDate) => {
+        const nextDay = Math.min(
+          currentSelectedDate.getDate(),
+          new Date(nextMonth.getFullYear(), nextMonth.getMonth() + 1, 0).getDate()
+        );
+        return createCalendarDate(nextMonth, nextDay);
+      });
+
+      return nextMonth;
+    });
   }
 
   function handleSelectDay(cell: CalendarDayCell) {
@@ -125,6 +203,8 @@ export function PlannerScreen() {
     setDraftIngredientCount('1');
     setEditingIngredientIndex(null);
     setDraftNutritionalBreakdown('');
+    setSelectedAddMealGroupId(null);
+    setSelectedMealCardId(null);
   }
 
   function openAddMealModal(date: Date) {
@@ -165,6 +245,8 @@ export function PlannerScreen() {
         targetDayKey,
         formatFullDateLabel(parsedDate),
         {
+          groupId: selectedAddMealGroupId,
+          mealCardId: selectedMealCardId,
           name: trimmedName,
           type: draftType,
           recipe: draftRecipe,
@@ -174,8 +256,126 @@ export function PlannerScreen() {
       );
 
       resetDraft();
-    } finally {
+      closeAddMealModal();
+    } catch (error) {
+      console.error('Failed to save meal:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save meal. Please try again.';
+      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
       setPendingDayKey(null);
+    }
+  }
+
+  function handleSelectMealCard(mealCard: SavedMealCard) {
+    const mealDraft = createMealDraftFromSavedMealCard(mealCard);
+
+    setSelectedMealCardId(mealCard.id);
+    setDraftName(mealDraft.name);
+    setDraftType(mealDraft.type ?? '');
+    setDraftRecipe(mealDraft.recipe ?? '');
+    setDraftIngredients(mealDraft.ingredients ?? []);
+    setDraftIngredientName('');
+    setDraftIngredientCount('1');
+    setEditingIngredientIndex(null);
+    setDraftNutritionalBreakdown(mealDraft.nutritionalBreakdown ?? '');
+  }
+
+  async function handleAddMealToMealCards() {
+    if (!selectedMeal || isSavingMealCard) {
+      return;
+    }
+
+    setIsSavingMealCard(true);
+
+    try {
+      await saveMealCardDraft(
+        {
+          ...createMealCardInputFromMeal(selectedMeal),
+          successMessage: 'This meal was added to My Meal Cards.',
+        },
+        true
+      );
+    } catch (error) {
+      const apiError = error as ApiError;
+      if (!isMealCardNameConflictError(error)) {
+        Alert.alert('Error', apiError.message || 'Failed to add meal to My Meal Cards.');
+      }
+    } finally {
+      setIsSavingMealCard(false);
+    }
+  }
+
+  function closeMealCardNamePrompt() {
+    if (isSavingMealCard) {
+      return;
+    }
+
+    setPendingMealCardDraft(null);
+    setMealCardNamePromptValue('');
+    setMealCardNamePromptError(null);
+  }
+
+  async function handleConfirmMealCardNamePrompt() {
+    if (!pendingMealCardDraft) {
+      return;
+    }
+
+    const trimmedName = mealCardNamePromptValue.trim();
+
+    if (!trimmedName) {
+      setMealCardNamePromptError('Enter a unique meal card name.');
+      return;
+    }
+
+    setMealCardNamePromptError(null);
+    setIsSavingMealCard(true);
+
+    try {
+      await saveMealCardDraft(
+        {
+          ...pendingMealCardDraft,
+          name: trimmedName,
+        },
+        false
+      );
+      setPendingMealCardDraft(null);
+      setMealCardNamePromptValue('');
+    } catch (error) {
+      if (isMealCardNameConflictError(error)) {
+        setMealCardNamePromptError(getMealCardNameConflictMessage(trimmedName));
+        return;
+      }
+
+      const apiError = error as ApiError;
+      Alert.alert('Error', apiError.message || 'Failed to add meal to My Meal Cards.');
+    } finally {
+      setIsSavingMealCard(false);
+    }
+  }
+
+  async function saveMealCardDraft(draft: MealCardCreateDraft, allowRenamePrompt: boolean) {
+    try {
+      const response = await api.createMealCard({
+        name: draft.name,
+        mealType: draft.mealType,
+        recipe: draft.recipe,
+        nutritionalBreakdown: draft.nutritionalBreakdown,
+        ingredients: draft.ingredients,
+      });
+      const createdMealCard = mapApiMealCardsToSavedMealCards([response])[0];
+
+      setSavedMealCards((currentCards) =>
+        createdMealCard ? [createdMealCard, ...currentCards] : currentCards
+      );
+      Alert.alert('Saved', draft.successMessage);
+    } catch (error) {
+      if (allowRenamePrompt && isMealCardNameConflictError(error)) {
+        setPendingMealCardDraft(draft);
+        setMealCardNamePromptValue(draft.name);
+        setMealCardNamePromptError(getMealCardNameConflictMessage(draft.name));
+        return;
+      }
+
+      throw error;
     }
   }
 
@@ -244,22 +444,22 @@ export function PlannerScreen() {
       return;
     }
 
-    const memberNamesPreview = MOCK_PLANNER_FRIENDS.filter((friend) =>
-      selectedFriendIdsForNewGroup.includes(friend.id)
-    ).map((friend) => friend.name.split(' ')[0] ?? friend.name);
-    const newGroupId = `group-${Date.now()}`;
-
-    setAvailableGroups((currentGroups) => [
-      ...currentGroups,
-      {
-        id: newGroupId,
-        name: trimmedName,
-        memberIds: [...selectedFriendIdsForNewGroup],
-        memberNamesPreview,
-      },
-    ]);
-    setSelectedGroupIds((currentIds) => [...currentIds, newGroupId]);
-    closeAddGroupModal();
+    void (async () => {
+      try {
+        setIsCreatingGroup(true);
+        const newGroup = await api.createPlannerGroup(trimmedName, selectedFriendIdsForNewGroup);
+        setAvailableGroups((currentGroups) => [...currentGroups, newGroup]);
+        setSelectedGroupIds((currentIds) =>
+          currentIds.includes(newGroup.id) ? currentIds : [...currentIds, newGroup.id]
+        );
+        closeAddGroupModal();
+      } catch (error) {
+        const apiError = error as ApiError;
+        Alert.alert('Error', apiError.message || 'Failed to create group.');
+      } finally {
+        setIsCreatingGroup(false);
+      }
+    })();
   }
 
   return (
@@ -449,12 +649,35 @@ export function PlannerScreen() {
       </ScrollView>
 
       <MealDetailModal
+        isSavingToMealCard={isSavingMealCard}
         meal={selectedMeal}
+        onAddToMealCards={() => {
+          void handleAddMealToMealCards();
+        }}
         visible={selectedMeal !== null}
         onToggleMade={setMealMade}
         onClose={() => {
           setSelectedMealId(null);
         }}
+      />
+
+      <MealCardNamePromptModal
+        helperText={mealCardNamePromptError ?? undefined}
+        isSaving={isSavingMealCard}
+        onChangeValue={(value) => {
+          setMealCardNamePromptValue(value);
+          if (mealCardNamePromptError) {
+            setMealCardNamePromptError(null);
+          }
+        }}
+        onClose={closeMealCardNamePrompt}
+        onSave={() => {
+          void handleConfirmMealCardNamePrompt();
+        }}
+        subtitle="That meal card name is already used. Change it and try again."
+        title="Choose a unique meal card name"
+        value={mealCardNamePromptValue}
+        visible={pendingMealCardDraft !== null}
       />
 
       <AddMealModal
@@ -469,10 +692,15 @@ export function PlannerScreen() {
         editingIngredientIndex={editingIngredientIndex}
         draftNutritionalBreakdown={draftNutritionalBreakdown}
         availableIngredientNames={availableIngredientNames}
+        availableGroups={availableGroups}
         isDateValid={parseDateInputValue(draftDate) !== null}
         isIngredientCountValid={isIngredientCountDraftValid}
         isSaving={pendingDayKey !== null}
+        selectedGroupId={selectedAddMealGroupId}
+        savedMealCards={savedMealCards}
+        selectedMealCardId={selectedMealCardId}
         onChangeDate={setDraftDate}
+        onChangeGroupId={setSelectedAddMealGroupId}
         onChangeName={setDraftName}
         onChangeType={(value) => {
           setDraftType(value);
@@ -500,6 +728,7 @@ export function PlannerScreen() {
         onSave={() => {
           void handleSaveMeal();
         }}
+        onSelectMealCard={handleSelectMealCard}
       />
 
       <PlannerGroupSelectorModal
@@ -518,7 +747,7 @@ export function PlannerScreen() {
 
       <AddPlannerGroupModal
         visible={isAddGroupVisible}
-        friends={MOCK_PLANNER_FRIENDS}
+        friends={availableFriends}
         draftGroupName={newGroupNameDraft}
         selectedFriendIds={selectedFriendIdsForNewGroup}
         isCreateDisabled={isCreateGroupDisabled}

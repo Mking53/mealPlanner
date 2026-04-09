@@ -12,6 +12,7 @@ type GroceryCategoryCardProps = {
   onDelete?: (itemId: string) => void;
   onToggle?: (itemId: string) => void;
   onUpdateCount?: (itemId: string) => void;
+  onUpdateAllocatedCount?: (itemId: string) => void;
 };
 
 export function GroceryCategoryCard({
@@ -20,6 +21,7 @@ export function GroceryCategoryCard({
   onToggle,
   onDelete,
   onUpdateCount,
+  onUpdateAllocatedCount,
 }: GroceryCategoryCardProps) {
   return (
     <CardWrapper>
@@ -34,6 +36,7 @@ export function GroceryCategoryCard({
               onToggle={onToggle}
               onDelete={onDelete}
               onUpdateCount={onUpdateCount}
+              onUpdateAllocatedCount={onUpdateAllocatedCount}
             />
           ))}
         </View>

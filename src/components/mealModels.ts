@@ -17,6 +17,8 @@ export type MealItem = {
 };
 
 export type NewMealDraft = {
+  mealCardId?: string | null;
+  groupId?: string | null;
   name: string;
   type?: MealType | '';
   recipe?: string;
