@@ -9,6 +9,8 @@ type ProfileMealCardsScreenProps = {
   onAddToDay: (meal: SavedMealCard) => void;
   onBack: () => void;
   onEditMeal: (meal: SavedMealCard) => void;
+  onRemoveMeal: (meal: SavedMealCard) => void;
+  removingMealId?: string | null;
 };
 
 export function ProfileMealCardsScreen({
@@ -16,6 +18,8 @@ export function ProfileMealCardsScreen({
   onAddToDay,
   onBack,
   onEditMeal,
+  onRemoveMeal,
+  removingMealId = null,
 }: ProfileMealCardsScreenProps) {
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -40,7 +44,9 @@ export function ProfileMealCardsScreen({
             {meals.map((meal) => (
               <SavedMealCardRow
                 key={meal.id}
+                isRemoving={removingMealId === meal.id}
                 meal={meal}
+                onRemove={onRemoveMeal}
                 onPress={onEditMeal}
                 onAddToDay={onAddToDay}
               />

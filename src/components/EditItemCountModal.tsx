@@ -1,24 +1,27 @@
-import { COLORS } from '../constants/theme';
 import { ModalWrapper } from './ModalWrapper';
 import { ValidatedInput } from './ValidatedInput';
 
 type EditItemCountModalProps = {
   draftCount: string;
+  fieldLabel?: string;
   isCountValid: boolean;
   itemName: string;
   onChangeCount: (value: string) => void;
   onClose: () => void;
   onSave: () => void;
+  title?: string;
   visible: boolean;
 };
 
 export function EditItemCountModal({
   draftCount,
+  fieldLabel = 'Count',
   isCountValid,
   itemName,
   onChangeCount,
   onClose,
   onSave,
+  title = 'Edit Count',
   visible,
 }: EditItemCountModalProps) {
   const isSaveDisabled = draftCount.trim().length === 0 || !isCountValid;
@@ -27,7 +30,7 @@ export function EditItemCountModal({
     <ModalWrapper
       visible={visible}
       onClose={onClose}
-      title="Edit Count"
+      title={title}
       subtitle={itemName}
       primaryAction={{
         label: 'Save',
@@ -39,7 +42,7 @@ export function EditItemCountModal({
         onPress: onClose,
       }}>
       <ValidatedInput
-        label="Count"
+        label={fieldLabel}
         placeholder="Enter count"
         value={draftCount}
         onChangeText={onChangeCount}

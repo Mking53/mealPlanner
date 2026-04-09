@@ -1,63 +1,125 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { api, type ApiError } from '../api/mealPlannerApi';
 
 type AuthContextValue = {
-  createAccount: (name: string, email: string, password: string) => void;
+  createAccount: (name: string, email: string, password: string) => Promise<void>;
   isAuthenticated: boolean;
-  signIn: (email: string, password: string) => void;
-  signOut: () => void;
+  isLoading: boolean;
+  signIn: (email: string, password: string) => Promise<void>;
+  signOut: () => Promise<void>;
   userEmail: string;
   userName: string;
+  error: string | null;
 };
-
-const DEFAULT_USER_NAME = 'Maya Carter';
-const DEFAULT_USER_EMAIL = 'maya@example.com';
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userName, setUserName] = useState(DEFAULT_USER_NAME);
-  const [userEmail, setUserEmail] = useState(DEFAULT_USER_EMAIL);
+  const [isLoading, setIsLoading] = useState(true);
+  const [userName, setUserName] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [error, setError] = useState<string | null>(null);
 
-  function signIn(email: string, _password: string) {
-    const trimmedEmail = email.trim();
-    const derivedName = trimmedEmail.split('@')[0]?.trim();
+  useEffect(() => {
+    async function restoreSession() {
+      if (!api.hasToken()) {
+        setIsLoading(false);
+        return;
+      }
 
-    setUserEmail(trimmedEmail);
+      try {
+        const profile = await api.getProfile();
 
-    if (derivedName) {
-      setUserName(
-        derivedName
-          .split(/[.\s_-]+/)
-          .filter(Boolean)
-          .map((part) => part[0]!.toUpperCase() + part.slice(1))
-          .join(' ')
-      );
+        setUserEmail(profile.email);
+        setUserName(profile.full_name);
+        setIsAuthenticated(true);
+      } catch (err) {
+        api.clearToken();
+        const apiError = err as ApiError;
+        setError(apiError.message || 'Session expired');
+        setUserEmail('');
+        setUserName('');
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
+      }
     }
 
-    setIsAuthenticated(true);
-  }
+    void restoreSession();
+  }, []);
 
-  function createAccount(name: string, email: string, _password: string) {
-    setUserName(name.trim());
-    setUserEmail(email.trim());
-    setIsAuthenticated(true);
-  }
+  const signIn = useCallback(async (email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
 
-  function signOut() {
-    setIsAuthenticated(false);
-  }
+    try {
+      const response = await api.signin(email, password);
+
+      setUserEmail(response.user.email);
+      setUserName(response.user.fullName);
+      setIsAuthenticated(true);
+    } catch (err) {
+      const apiError = err as ApiError;
+      const errorMessage = apiError.message || 'Sign in failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const createAccount = useCallback(async (name: string, email: string, password: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const response = await api.signup(email, password, name);
+
+      setUserEmail(response.user.email);
+      setUserName(response.user.fullName);
+      setIsAuthenticated(true);
+    } catch (err) {
+      const apiError = err as ApiError;
+      const errorMessage = apiError.message || 'Account creation failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  const signOut = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await api.logout();
+      setUserEmail('');
+      setUserName('');
+      setIsAuthenticated(false);
+    } catch (err) {
+      const apiError = err as ApiError;
+      const errorMessage = apiError.message || 'Sign out failed';
+      setError(errorMessage);
+      throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const value = useMemo(
     () => ({
       createAccount,
       isAuthenticated,
+      isLoading,
       signIn,
       signOut,
       userEmail,
       userName,
+      error,
     }),
-    [isAuthenticated, userEmail, userName]
+    [isAuthenticated, isLoading, userEmail, userName, error, signIn, signOut, createAccount]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

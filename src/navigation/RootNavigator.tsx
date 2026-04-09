@@ -1,5 +1,6 @@
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 
 import { BaseNavigation } from './BaseNavigation';
 import { ProfileNavigator } from './ProfileNavigator';
@@ -17,7 +18,17 @@ type RootTabParamList = {
 const Tab = createBottomTabNavigator<RootTabParamList>();
 
 export function RootNavigator() {
-  const { createAccount, isAuthenticated, signIn } = useAuth();
+  const { createAccount, isAuthenticated, isLoading, signIn } = useAuth();
+
+  if (isLoading) {
+    return (
+      <BaseNavigation>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#2f7d32" />
+        </View>
+      </BaseNavigation>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
@@ -79,3 +90,12 @@ export function RootNavigator() {
     </MealPlannerProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f1f6ef',
+  },
+});

@@ -8,10 +8,19 @@ type GroceryItemRowProps = {
   onDelete?: (itemId: string) => void;
   onToggle?: (itemId: string) => void;
   onUpdateCount?: (itemId: string) => void;
+  onUpdateAllocatedCount?: (itemId: string) => void;
 };
 
-export function GroceryItemRow({ item, onToggle, onDelete, onUpdateCount }: GroceryItemRowProps) {
+export function GroceryItemRow({
+  item,
+  onToggle,
+  onDelete,
+  onUpdateCount,
+  onUpdateAllocatedCount,
+}: GroceryItemRowProps) {
   const isKitchenItem = 'freeCount' in item;
+  const isKitchenItemDepleted = isKitchenItem && item.freeCount === 0 && item.allocatedCount === 0;
+  const shouldStrikeThrough = isKitchenItem ? isKitchenItemDepleted : item.isBought;
 
   return (
     <View style={styles.row}>
@@ -27,7 +36,7 @@ export function GroceryItemRow({ item, onToggle, onDelete, onUpdateCount }: Groc
         </Pressable>
       ) : null}
 
-      <Text style={[styles.itemName, item.isBought && styles.itemNameBought]}>{item.name}</Text>
+      <Text style={[styles.itemName, shouldStrikeThrough && styles.itemNameBought]}>{item.name}</Text>
 
       {isKitchenItem ? (
         <View style={styles.kitchenCounts}>
@@ -43,10 +52,20 @@ export function GroceryItemRow({ item, onToggle, onDelete, onUpdateCount }: Groc
             <Text style={styles.countLabel}>Free</Text>
           </Pressable>
 
-          <View style={styles.allocatedPill}>
+          <Pressable
+            accessibilityLabel={`Edit allocated count for ${item.name}`}
+            accessibilityRole="button"
+            disabled={!onUpdateAllocatedCount}
+            onPress={() => {
+              onUpdateAllocatedCount?.(item.id);
+            }}
+            style={({ pressed }) => [
+              styles.allocatedPill,
+              pressed && onUpdateAllocatedCount && styles.countButtonPressed,
+            ]}>
             <Text style={styles.allocatedText}>{(item as KitchenItem).allocatedCount}</Text>
             <Text style={styles.countLabel}>Allocated</Text>
-          </View>
+          </Pressable>
         </View>
       ) : (
         <Pressable

@@ -1,10 +1,15 @@
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '../constants/theme';
 import type { ProfileDayOption } from './profileModels';
+import { ValidatedInput } from './ValidatedInput';
+import { parseDateInputValue } from './mealModels';
 
 type AddSavedMealToDayModalProps = {
+  draftDate: string;
+  isDateValid: boolean;
   isSaving: boolean;
   mealName: string;
+  onChangeDate: (value: string) => void;
   onClose: () => void;
   onConfirm: () => void;
   onSelectDay: (dayKey: string) => void;
@@ -14,8 +19,11 @@ type AddSavedMealToDayModalProps = {
 };
 
 export function AddSavedMealToDayModal({
+  draftDate,
+  isDateValid,
   isSaving,
   mealName,
+  onChangeDate,
   onClose,
   onConfirm,
   onSelectDay,
@@ -24,6 +32,16 @@ export function AddSavedMealToDayModal({
   dayOptions,
 }: AddSavedMealToDayModalProps) {
   const selectedOption = dayOptions.find((option) => option.dayKey === selectedDayKey) ?? null;
+  const parsedDate = parseDateInputValue(draftDate);
+  const selectedDateLabel =
+    selectedOption?.fullDateLabel ??
+    (parsedDate
+      ? parsedDate.toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        })
+      : 'Choose a day to continue');
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
@@ -31,6 +49,20 @@ export function AddSavedMealToDayModal({
         <Pressable onPress={() => {}} style={styles.card}>
           <Text style={styles.title}>Add Meal Card</Text>
           <Text style={styles.subtitle}>Choose a day for {mealName}.</Text>
+
+          <ValidatedInput
+            label="Date"
+            placeholder="MM/DD/YYYY"
+            value={draftDate}
+            onChangeText={onChangeDate}
+            isValid={isDateValid}
+            helperText={
+              draftDate.trim().length > 0 && !isDateValid
+                ? 'Enter a valid date in MM/DD/YYYY format.'
+                : 'Type a date or tap a day below.'
+            }
+            keyboardType="number-pad"
+          />
 
           <ScrollView contentContainerStyle={styles.optionList} showsVerticalScrollIndicator={false}>
             {dayOptions.map((option) => {
@@ -67,9 +99,7 @@ export function AddSavedMealToDayModal({
 
           <View style={styles.selectionCard}>
             <Text style={styles.selectionLabel}>Selected Day</Text>
-            <Text style={styles.selectionValue}>
-              {selectedOption?.fullDateLabel ?? 'Choose a day to continue'}
-            </Text>
+            <Text style={styles.selectionValue}>{selectedDateLabel}</Text>
           </View>
 
           <View style={styles.actionRow}>
@@ -86,12 +116,12 @@ export function AddSavedMealToDayModal({
 
             <Pressable
               accessibilityRole="button"
-              disabled={selectedDayKey === null || isSaving}
+              disabled={!isDateValid || isSaving}
               onPress={onConfirm}
               style={({ pressed }) => [
                 styles.primaryButton,
-                (selectedDayKey === null || isSaving) && styles.primaryButtonDisabled,
-                pressed && selectedDayKey !== null && !isSaving && styles.buttonPressed,
+                (!isDateValid || isSaving) && styles.primaryButtonDisabled,
+                pressed && isDateValid && !isSaving && styles.buttonPressed,
               ]}>
               <Text style={styles.primaryButtonText}>{isSaving ? 'Adding...' : 'Confirm'}</Text>
             </Pressable>

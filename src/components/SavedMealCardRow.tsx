@@ -9,12 +9,16 @@ type SavedMealCardRowProps = {
   meal: SavedMealCard;
   onPress: (meal: SavedMealCard) => void;
   onAddToDay: (meal: SavedMealCard) => void;
+  onRemove?: (meal: SavedMealCard) => void;
+  isRemoving?: boolean;
 };
 
 export function SavedMealCardRow({
   meal,
   onAddToDay,
   onPress,
+  onRemove,
+  isRemoving = false,
 }: SavedMealCardRowProps) {
   function handlePress() {
     onPress(meal);
@@ -69,6 +73,24 @@ export function SavedMealCardRow({
           <Text style={styles.ctaText}>Add to Day</Text>
           <MaterialIcons name="arrow-forward" size={16} color={COLORS.primary} />
         </Pressable>
+
+        {onRemove ? (
+          <Pressable
+            accessibilityRole="button"
+            disabled={isRemoving}
+            onPress={() => {
+              onRemove(meal);
+            }}
+            style={({ pressed }) => [
+              styles.removeButton,
+              isRemoving && styles.removeButtonDisabled,
+              pressed && !isRemoving && styles.cardPressed,
+            ]}>
+            <Text style={styles.removeButtonText}>
+              {isRemoving ? 'Removing...' : 'Remove'}
+            </Text>
+          </Pressable>
+        ) : null}
       </View>
     </CardWrapper>
   );
@@ -122,11 +144,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    gap: 12,
   },
   footerInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flex: 1,
   },
   footerInfoText: {
     fontSize: 13,
@@ -141,5 +165,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: COLORS.primary,
+  },
+  removeButton: {
+    minHeight: 36,
+    borderRadius: 999,
+    backgroundColor: '#fdebea',
+    paddingHorizontal: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  removeButtonDisabled: {
+    opacity: 0.7,
+  },
+  removeButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.error,
   },
 });

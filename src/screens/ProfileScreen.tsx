@@ -5,15 +5,24 @@ import {
   ProfileHeaderCard,
   SavedMealCardRow,
   SettingsActionRow,
+  type PlannerFriendOption,
+  type PlannerGroup,
   type SavedMealCard,
 } from '@/src/components';
 
 type ProfileScreenProps = {
+  friends: PlannerFriendOption[];
+  groups: PlannerGroup[];
   onAddFriends: () => void;
+  onAddMeal: () => void;
   isLoading: boolean;
   onAddToDay: (meal: SavedMealCard) => void;
   onEditMeal: (meal: SavedMealCard) => void;
+  onRemoveMeal: (meal: SavedMealCard) => void;
+  removingMealId?: string | null;
   onLogout: () => void;
+  onShowFriends: () => void;
+  onShowGroups: () => void;
   onShowAllMeals: () => void;
   savedMeals: SavedMealCard[];
   userImageUri?: string;
@@ -23,11 +32,18 @@ type ProfileScreenProps = {
 const PREVIEW_MEAL_COUNT = 3;
 
 export function ProfileScreen({
+  friends,
+  groups,
   onAddFriends,
+  onAddMeal,
   isLoading,
   onAddToDay,
   onEditMeal,
+  onRemoveMeal,
+  removingMealId = null,
   onLogout,
+  onShowFriends,
+  onShowGroups,
   onShowAllMeals,
   savedMeals,
   userImageUri,
@@ -52,12 +68,20 @@ export function ProfileScreen({
                 <Text style={styles.sectionHint}>Tap a card to edit it, or use Add to Day to plan it.</Text>
               </View>
 
-              <Pressable
-                accessibilityRole="button"
-                onPress={onShowAllMeals}
-                style={({ pressed }) => [styles.viewAllButton, pressed && styles.buttonPressed]}>
-                <Text style={styles.viewAllText}>View All</Text>
-              </Pressable>
+              <View style={styles.buttonGroup}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onAddMeal}
+                  style={({ pressed }) => [styles.viewAllButton, pressed && styles.buttonPressed]}>
+                  <Text style={styles.viewAllText}>Add</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onShowAllMeals}
+                  style={({ pressed }) => [styles.viewAllButton, pressed && styles.buttonPressed]}>
+                  <Text style={styles.viewAllText}>View All</Text>
+                </Pressable>
+              </View>
             </View>
 
             {isLoading ? (
@@ -70,7 +94,9 @@ export function ProfileScreen({
                 {previewMeals.map((meal) => (
                   <SavedMealCardRow
                     key={meal.id}
+                    isRemoving={removingMealId === meal.id}
                     meal={meal}
+                    onRemove={onRemoveMeal}
                     onPress={onEditMeal}
                     onAddToDay={onAddToDay}
                   />
@@ -82,11 +108,21 @@ export function ProfileScreen({
           <View style={styles.section}>
             <View style={styles.sectionHeaderCopy}>
               <Text style={styles.sectionTitle}>Settings</Text>
-              <Text style={styles.sectionHint}>More account actions can be added here later.</Text>
+              <Text style={styles.sectionHint}>Manage your people and account actions here.</Text>
             </View>
 
             <View style={styles.settingsList}>
               <SettingsActionRow iconName="group-add" label="Add Friends" onPress={onAddFriends} />
+              <SettingsActionRow
+                iconName="groups"
+                label={`Friends${friends.length > 0 ? ` (${friends.length})` : ''}`}
+                onPress={onShowFriends}
+              />
+              <SettingsActionRow
+                iconName="diversity-3"
+                label={`Groups${groups.length > 0 ? ` (${groups.length})` : ''}`}
+                onPress={onShowGroups}
+              />
               <SettingsActionRow iconName="logout" label="Log Out" onPress={onLogout} />
             </View>
           </View>
@@ -133,6 +169,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     lineHeight: 20,
     color: '#5b6c61',
+  },
+  buttonGroup: {
+    flexDirection: 'row',
+    gap: 8,
   },
   viewAllButton: {
     minHeight: 38,

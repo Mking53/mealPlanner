@@ -17,6 +17,7 @@ import { useMealPlanner } from '@/src/state';
 export function MyKitchenScreen() {
   const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  const [editingCountField, setEditingCountField] = useState<'allocated' | 'free'>('free');
   const [draftName, setDraftName] = useState('');
   const [draftCount, setDraftCount] = useState('1');
   const [draftCategory, setDraftCategory] = useState<KitchenCategory>(KITCHEN_CATEGORIES[0]);
@@ -26,6 +27,7 @@ export function MyKitchenScreen() {
     isLoading,
     kitchenInventory,
     removeKitchenInventoryItem,
+    updateKitchenAllocatedCount,
     updateKitchenFreeCount,
   } = useMealPlanner();
 
@@ -34,7 +36,7 @@ export function MyKitchenScreen() {
   const subtitle = `${inStockCount} item${inStockCount === 1 ? '' : 's'} in stock`;
 
   function handleDeleteItem(itemId: string) {
-    removeKitchenInventoryItem(itemId);
+    void removeKitchenInventoryItem(itemId);
   }
 
   function handleOpenEditCount(itemId: string) {
@@ -45,11 +47,25 @@ export function MyKitchenScreen() {
     }
 
     setEditingItemId(itemId);
+    setEditingCountField('free');
     setEditCountDraft(String(selectedItem.freeCount));
+  }
+
+  function handleOpenEditAllocatedCount(itemId: string) {
+    const selectedItem = kitchenInventory.find((item) => item.id === itemId);
+
+    if (!selectedItem) {
+      return;
+    }
+
+    setEditingItemId(itemId);
+    setEditingCountField('allocated');
+    setEditCountDraft(String(selectedItem.allocatedCount));
   }
 
   function closeEditCountModal() {
     setEditingItemId(null);
+    setEditingCountField('free');
     setEditCountDraft('1');
   }
 
@@ -59,7 +75,11 @@ export function MyKitchenScreen() {
     }
 
     const nextCount = Number(editCountDraft);
-    updateKitchenFreeCount(editingItemId, nextCount);
+    if (editingCountField === 'allocated') {
+      void updateKitchenAllocatedCount(editingItemId, nextCount);
+    } else {
+      void updateKitchenFreeCount(editingItemId, nextCount);
+    }
     closeEditCountModal();
   }
 
@@ -78,7 +98,7 @@ export function MyKitchenScreen() {
       return;
     }
 
-    addKitchenInventoryItem(trimmedName, draftCategory, nextCount);
+    void addKitchenInventoryItem(trimmedName, draftCategory, nextCount);
     closeAddModal();
   }
 
@@ -91,15 +111,25 @@ export function MyKitchenScreen() {
         </View>
 
         <View style={styles.content}>
-          <Pressable
-            accessibilityRole="button"
-            onPress={() => {
-              setIsAddModalVisible(true);
-            }}
-            style={({ pressed }) => [styles.addButton, pressed && styles.addButtonPressed]}>
-            <MaterialIcons name="add" size={22} color="#2f7d32" />
-            <Text style={styles.addButtonText}>Add Item</Text>
-          </Pressable>
+          <View style={styles.actionRow}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => {
+                setIsAddModalVisible(true);
+              }}
+              style={({ pressed }) => [styles.addButton, pressed && styles.actionButtonPressed]}>
+              <MaterialIcons name="add" size={22} color="#2f7d32" />
+              <Text style={styles.addButtonText}>Add Item</Text>
+            </Pressable>
+
+            <Pressable
+              accessibilityLabel="Scan kitchen item"
+              accessibilityRole="button"
+              onPress={() => {}}
+              style={({ pressed }) => [styles.scanButton, pressed && styles.actionButtonPressed]}>
+              <MaterialIcons name="camera-alt" size={24} color="#ffffff" />
+            </Pressable>
+          </View>
 
           {isLoading ? (
             <View style={styles.loadingCard}>
@@ -114,6 +144,7 @@ export function MyKitchenScreen() {
                 items={group.items}
                 onDelete={handleDeleteItem}
                 onUpdateCount={handleOpenEditCount}
+                onUpdateAllocatedCount={handleOpenEditAllocatedCount}
               />
             ))
           )}
@@ -137,6 +168,8 @@ export function MyKitchenScreen() {
       <EditItemCountModal
         visible={editingItemId !== null}
         itemName={kitchenInventory.find((item) => item.id === editingItemId)?.name ?? ''}
+        title={editingCountField === 'allocated' ? 'Edit Allocated Count' : 'Edit Free Count'}
+        fieldLabel={editingCountField === 'allocated' ? 'Allocated' : 'Free'}
         draftCount={editCountDraft}
         isCountValid={isValidCount(editCountDraft)}
         onChangeCount={setEditCountDraft}
@@ -188,7 +221,12 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     gap: 16,
   },
+  actionRow: {
+    flexDirection: 'row',
+    gap: 10,
+  },
   addButton: {
+    flex: 4,
     minHeight: 56,
     borderRadius: 18,
     borderWidth: 2,
@@ -199,7 +237,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  addButtonPressed: {
+  scanButton: {
+    flex: 1,
+    minHeight: 56,
+    borderRadius: 18,
+    backgroundColor: '#2f7d32',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  actionButtonPressed: {
     opacity: 0.84,
   },
   addButtonText: {

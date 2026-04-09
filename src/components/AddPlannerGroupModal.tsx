@@ -1,3 +1,4 @@
+import { useMemo, useState } from 'react';
 import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { COLORS, CARD_STYLES } from '../constants/theme';
@@ -6,36 +7,57 @@ import { ModalWrapper } from './ModalWrapper';
 import type { PlannerFriendOption } from './plannerGroupModels';
 
 type AddPlannerGroupModalProps = {
+  actionLabel?: string;
   draftGroupName: string;
   friends: PlannerFriendOption[];
   isCreateDisabled: boolean;
   onChangeGroupName: (value: string) => void;
   onClose: () => void;
   onCreateGroup: () => void;
+  subtitle?: string;
+  title?: string;
   onToggleFriend: (friendId: string) => void;
   selectedFriendIds: string[];
   visible: boolean;
 };
 
 export function AddPlannerGroupModal({
+  actionLabel = 'Create Group',
   draftGroupName,
   friends,
   isCreateDisabled,
   onChangeGroupName,
   onClose,
   onCreateGroup,
+  subtitle = 'Choose friends from your connected list to create a planner group.',
+  title = 'Add Group',
   onToggleFriend,
   selectedFriendIds,
   visible,
 }: AddPlannerGroupModalProps) {
+  const [friendSearch, setFriendSearch] = useState('');
+  const normalizedFriendSearch = friendSearch.trim().toLowerCase();
+  const filteredFriends = useMemo(
+    () =>
+      friends.filter((friend) => {
+        if (!normalizedFriendSearch) {
+          return true;
+        }
+
+        const searchable = `${friend.name} ${friend.email ?? ''}`.toLowerCase();
+        return searchable.includes(normalizedFriendSearch);
+      }),
+    [friends, normalizedFriendSearch]
+  );
+
   return (
     <ModalWrapper
       visible={visible}
       onClose={onClose}
-      title="Add Group"
-      subtitle="Choose friends from your invited list. This is mock UI for now and is not connected yet."
+      title={title}
+      subtitle={subtitle}
       primaryAction={{
-        label: 'Create Group',
+        label: actionLabel,
         onPress: onCreateGroup,
         disabled: isCreateDisabled,
       }}
@@ -56,10 +78,20 @@ export function AddPlannerGroupModal({
 
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Friends</Text>
+        <TextInput
+          placeholder="Search friends"
+          placeholderTextColor={COLORS.textDisabled}
+          style={styles.input}
+          value={friendSearch}
+          onChangeText={setFriendSearch}
+        />
+        <Text style={styles.helperText}>
+          Select multiple friends to add them to the group at the same time.
+        </Text>
         <ScrollView
           contentContainerStyle={styles.friendList}
           showsVerticalScrollIndicator={false}>
-          {friends.map((friend) => {
+          {filteredFriends.map((friend) => {
             const isSelected = selectedFriendIds.includes(friend.id);
 
             return (
@@ -82,6 +114,7 @@ export function AddPlannerGroupModal({
                     ]}>
                     {friend.name}
                   </Text>
+                  {friend.email ? <Text style={styles.friendEmail}>{friend.email}</Text> : null}
                 </View>
 
                 <View
@@ -96,6 +129,11 @@ export function AddPlannerGroupModal({
               </Pressable>
             );
           })}
+          {filteredFriends.length === 0 ? (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No friends match your search.</Text>
+            </View>
+          ) : null}
         </ScrollView>
       </View>
     </ModalWrapper>
@@ -110,6 +148,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: COLORS.textTertiary,
+  },
+  helperText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: COLORS.textSecondary,
   },
   input: {
     borderWidth: 1,
@@ -141,6 +184,7 @@ const styles = StyleSheet.create({
   },
   friendCopy: {
     flex: 1,
+    gap: 2,
   },
   friendName: {
     fontSize: 15,
@@ -149,6 +193,10 @@ const styles = StyleSheet.create({
   },
   friendNameSelected: {
     color: '#215c25',
+  },
+  friendEmail: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
   },
   checkbox: {
     width: 24,
@@ -166,5 +214,14 @@ const styles = StyleSheet.create({
   },
   buttonPressed: {
     opacity: 0.84,
+  },
+  emptyState: {
+    borderRadius: CARD_STYLES.borderRadiusMedium,
+    backgroundColor: COLORS.backgroundLight,
+    padding: 14,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
   },
 });

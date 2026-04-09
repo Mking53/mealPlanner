@@ -8,13 +8,22 @@ import {
 } from './mealModels';
 
 type MealDetailModalProps = {
+  isSavingToMealCard?: boolean;
+  onAddToMealCards?: (meal: MealItem) => void;
   meal: MealItem | null;
   onToggleMade?: (mealId: string, wasMade: boolean) => void;
   visible: boolean;
   onClose: () => void;
 };
 
-export function MealDetailModal({ meal, visible, onClose, onToggleMade }: MealDetailModalProps) {
+export function MealDetailModal({
+  isSavingToMealCard = false,
+  meal,
+  visible,
+  onAddToMealCards,
+  onClose,
+  onToggleMade,
+}: MealDetailModalProps) {
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
       <Pressable style={styles.modalBackdrop} onPress={onClose}>
@@ -67,6 +76,23 @@ export function MealDetailModal({ meal, visible, onClose, onToggleMade }: MealDe
                 <View style={styles.detailRow}>
                   <Text style={styles.detailLabel}>Nutritional Breakdown</Text>
                   <Text style={styles.detailValue}>{meal.nutritionalBreakdown}</Text>
+                </View>
+                <View style={styles.actionRow}>
+                  <Pressable
+                    accessibilityRole="button"
+                    disabled={isSavingToMealCard}
+                    onPress={() => {
+                      onAddToMealCards?.(meal);
+                    }}
+                    style={({ pressed }) => [
+                      styles.addToMealCardsButton,
+                      isSavingToMealCard && styles.addToMealCardsButtonDisabled,
+                      pressed && !isSavingToMealCard && styles.closeButtonPressed,
+                    ]}>
+                    <Text style={styles.addToMealCardsButtonText}>
+                      {isSavingToMealCard ? 'Saving...' : 'Add To My Meal Cards'}
+                    </Text>
+                  </Pressable>
                 </View>
                 {isPastMealDate(meal.dateKey) ? (
                   <View style={styles.madeRow}>
@@ -160,6 +186,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#152033',
+  },
+  actionRow: {
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e6ece8',
+  },
+  addToMealCardsButton: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    backgroundColor: '#2f7d32',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+  },
+  addToMealCardsButtonDisabled: {
+    backgroundColor: '#8eb591',
+  },
+  addToMealCardsButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#ffffff',
   },
   madeRow: {
     flexDirection: 'row',
